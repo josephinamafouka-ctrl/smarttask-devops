@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: smarttask_db
+    environment:
+      POSTGRES_DB: smarttask
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secretpassword
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - smarttask-net
+    restart: always
+
+  backend:
+    build: ./backend
+    container_name: smarttask_backend
+    environment:
+      - DATABASE_URL=postgresql://admin:secretpassword@db:5432/smarttask
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    networks:
+      - smarttask-net
+    restart: always
+
+  frontend:
+    build: ./frontend
+    container_name: smarttask_frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    networks:
+      - smarttask-net
+    restart: always
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  smarttask-net:
+    driver: bridge
